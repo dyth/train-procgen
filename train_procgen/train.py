@@ -1,6 +1,6 @@
 import tensorflow as tf
 from baselines.ppo2 import ppo2
-from baselines.common.models import build_impala_cnn
+# from baselines.common.models import build_impala_cnn
 from baselines.common.mpi_util import setup_mpi_gpus
 from procgen import ProcgenEnv
 from baselines.common.vec_env import (
@@ -12,8 +12,9 @@ from baselines.common.vec_env import (
 from baselines import logger
 from mpi4py import MPI
 import argparse
+from .models import build_impala_cnn
 
-def train_fn(env_name, num_envs, distribution_mode, num_levels, start_level, timesteps_per_proc, is_test_worker=False, log_dir='/tmp/procgen', comm=None):
+def train_fn(env_name, num_envs, distribution_mode, num_levels, start_level, timesteps_per_proc, is_test_worker=False, log_dir='/tmp/procgen', comm=None, bias='none'):
     learning_rate = 5e-4
     ent_coef = .01
     gamma = .999
@@ -49,7 +50,7 @@ def train_fn(env_name, num_envs, distribution_mode, num_levels, start_level, tim
     sess = tf.Session(config=config)
     sess.__enter__()
 
-    conv_fn = lambda x: build_impala_cnn(x, depths=[16,32,32], emb_size=256)
+    conv_fn = lambda x: build_impala_cnn(x, depths=[16,32,32], emb_size=256, bias=bias)
 
     logger.info("training")
     ppo2.learn(
@@ -72,7 +73,7 @@ def train_fn(env_name, num_envs, distribution_mode, num_levels, start_level, tim
         update_fn=None,
         init_fn=None,
         vf_coef=0.5,
-        max_grad_norm=0.5,
+        max_grad_norm=0.5
     )
 
 def main():
@@ -84,6 +85,8 @@ def main():
     parser.add_argument('--start_level', type=int, default=0)
     parser.add_argument('--test_worker_interval', type=int, default=0)
     parser.add_argument('--timesteps_per_proc', type=int, default=50_000_000)
+    parser.add_argument('--log_dir', type=str, default='/home/dyth/scratch')
+    parser.add_argument('--bias', type=str, default='none')
 
     args = parser.parse_args()
 
@@ -103,7 +106,9 @@ def main():
         args.start_level,
         args.timesteps_per_proc,
         is_test_worker=is_test_worker,
-        comm=comm)
+        log_dir=args.log_dir,
+        comm=comm,
+        bias=args.bias)
 
 if __name__ == '__main__':
     main()

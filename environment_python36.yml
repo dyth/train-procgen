@@ -1,0 +1,12 @@
+channels:
+  - conda-forge
+
+dependencies:
+  - python=3.6
+  - mpi4py=3.0.3
+  - pip
+  - pip:
+    - gym==0.15.4
+    - procgen
+    - tensorflow_gpu==1.15.0
+    - pytest # for baselines
